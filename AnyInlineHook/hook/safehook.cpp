@@ -113,6 +113,9 @@ uint32_t safehook::hook()
 	{
 		// 申请分发函数的内存地址
 		uint64_t lpMem = alloc_mem_nearby(hi.hook_addr, 0x1000);
+
+		hi.disp_addr = lpMem;
+
 		memset((PVOID)lpMem, 0, 0x1000);
 		if (lpMem <= NULL)
 		{
@@ -153,21 +156,24 @@ uint32_t safehook::hook()
 bool safehook::unhook(uint64_t proxy_func)
 {
 	BOOL status = FALSE;
-	for (auto hi : hooklist_)
+	int i = 0;
+	for (; i < hooklist_.size(); i++)
 	{
-		if (hi.proxy_addr == proxy_func)
+		if (hooklist_[i].proxy_addr == proxy_func)
 		{
 			// 恢复原代码
 			DWORD old{};
-			if (VirtualProtect((PVOID)hi.hook_addr, 0x100, PAGE_EXECUTE_READWRITE, &old))
+			if (VirtualProtect((PVOID)hooklist_[i].hook_addr, 0x100, PAGE_EXECUTE_READWRITE, &old))
 			{
-				memcpy((PVOID)hi.hook_addr, hi.patch_opcode, hi.patch_len);
-				VirtualProtect((PVOID)hi.hook_addr, 0x100, old, NULL);
-				status = VirtualFree((PVOID)hi.disp_addr, 0x1000, MEM_COMMIT | MEM_RESERVE);
+				memcpy((PVOID)hooklist_[i].hook_addr, hooklist_[i].patch_opcode, hooklist_[i].patch_len);
+				VirtualProtect((PVOID)hooklist_[i].hook_addr, 0x100, old, NULL);
+				status = VirtualFree((PVOID)hooklist_[i].disp_addr, 0x1000, MEM_COMMIT | MEM_RESERVE);
+				hooklist_.erase(hooklist_.begin() + i);
+				break;
 			}
 
-			
 		}
 	}
+
 	return status;
 }
