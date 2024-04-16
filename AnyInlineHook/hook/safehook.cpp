@@ -28,7 +28,7 @@ safehook::HookInfo safehook::get_hook_info(uint64_t proxy_func)
 uint32_t safehook::get_patch_len(uint64_t addr)
 {
 	uint32_t LenCount = 0, Len = 0;
-	while (LenCount <= 5)        //ÖÁÉÙÐèÒª5×Ö½Ú
+	while (LenCount <= 5)        //è‡³å°‘éœ€è¦5å­—èŠ‚
 	{
 		Len = GetCodeLength((PUCHAR)addr, 64);
 		addr = addr + Len;
@@ -90,7 +90,7 @@ uint32_t safehook::hook()
 		return 0;
 	}
 
-	// »ñÈ¡·Ö·¢º¯ÊýµÄ×Ö½Ú³¤¶È
+	// èŽ·å–åˆ†å‘å‡½æ•°çš„å­—èŠ‚é•¿åº¦
 	if (dispatch_func_length_ <= 0)
 	{
 		InitializeReflector();
@@ -111,7 +111,7 @@ uint32_t safehook::hook()
 	uint32_t hook_ok = 0;
 	for (auto& hi : hooklist_)
 	{
-		// ÉêÇë·Ö·¢º¯ÊýµÄÄÚ´æµØÖ·
+		// ç”³è¯·åˆ†å‘å‡½æ•°çš„å†…å­˜åœ°å€
 		uint64_t lpMem = alloc_mem_nearby(hi.hook_addr, 0x1000);
 
 		hi.disp_addr = lpMem;
@@ -124,18 +124,18 @@ uint32_t safehook::hook()
 		memcpy((PVOID)lpMem, hookDispatch, dispatch_func_length_);
 		for (int i = 0; i < dispatch_func_length_; i++)
 		{
-			// Ìî³äÄ¿±êÖ´ÐÐº¯Êý
+			// å¡«å……ç›®æ ‡æ‰§è¡Œå‡½æ•°
 			if (*(uint64_t*)(lpMem + i) == 0x1212121212121212)
 			{
 				*(uint64_t*)(lpMem + i) = hi.proxy_addr;
 			}
 		}
 
-		// »ñÈ¡ÐèÒªpatchµÄ×Ö½Ú
+		// èŽ·å–éœ€è¦patchçš„å­—èŠ‚
 		uint32_t need_patch_size = get_patch_len(hi.hook_addr);
 		hi.patch_len = min(need_patch_size, 20);
 		memmove_s(hi.patch_opcode, hi.patch_len, (PVOID)(hi.hook_addr), hi.patch_len);
-		// Éú³Éshellcode
+		// ç”Ÿæˆshellcode
 		ReflectCode((PUCHAR)hi.hook_addr, need_patch_size, (PUCHAR)(lpMem + dispatch_func_length_), need_patch_size);
 
 		// hook
@@ -155,19 +155,19 @@ uint32_t safehook::hook()
 
 bool safehook::unhook(uint64_t proxy_func)
 {
-	BOOL status = FALSE;
+	BOOL status = TRUE;
 	int i = 0;
 	for (; i < hooklist_.size(); i++)
 	{
 		if (hooklist_[i].proxy_addr == proxy_func)
 		{
-			// »Ö¸´Ô­´úÂë
+			// æ¢å¤åŽŸä»£ç 
 			DWORD old{};
 			if (VirtualProtect((PVOID)hooklist_[i].hook_addr, 0x100, PAGE_EXECUTE_READWRITE, &old))
 			{
 				memcpy((PVOID)hooklist_[i].hook_addr, hooklist_[i].patch_opcode, hooklist_[i].patch_len);
 				VirtualProtect((PVOID)hooklist_[i].hook_addr, 0x100, old, NULL);
-				status = VirtualFree((PVOID)hooklist_[i].disp_addr, 0x1000, MEM_COMMIT | MEM_RESERVE);
+				//status = VirtualFree((PVOID)hooklist_[i].disp_addr, 0x1000, MEM_COMMIT | MEM_RESERVE);
 				hooklist_.erase(hooklist_.begin() + i);
 				break;
 			}
